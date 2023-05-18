@@ -1,4 +1,4 @@
-# rscript to read in excel files and create family spells
+# Rscript to read in excel files and create family spells
 library(readxl); library(tidyverse); library(data.table)
 setwd("C:/Users/mwohn/Box/OSUdata5yrs/From Robi Feb 22, 2022")
 #step1 import dataset
@@ -21,12 +21,6 @@ for(i in seq_along(d_list)) {
 rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 d_names
-x2015 <- d_list[[1]]
-x2016 <- d_list[[2]]
-x2017 <- d_list[[3]]
-x2018 <- d_list[[4]]
-x2019 <- d_list[[5]]
-
 
 # get all possible months for each year all_months
 # and all providers in each year, all_providers
@@ -40,12 +34,19 @@ for(i in seq_along(d_list)) {
     all_possible <- cross_join(all_months,all_providers)
     d_list[[i]] <- left_join(all_possible,d_list[[i]])
 }
+# data pairings. groups data into two consecutive years:
+biannual_spells <- list()
+yrs <- str_sub(d_names,2,5)
+for(i in 1:(length(yrs)-1)){
+    biannual_spells[[i]] <- bind_rows(d_list[[i]],d_list[[i+1]] )
+}
 
 # this function computes spell lengths, ignoring the first spell of the given
 # period. It returns a dataframe with the adult_id and spell length for each
 # family unit. 
-get_spell_length <-function(list_num){
-    dat <- d_list[[list_num]]
+get_spell_length <-function(list_num, list_name = "d_list"){
+    mylist <- get(list_name)
+    dat <- mylist[[list_num]]
     xmin <- min(dat$benemonth)
     dat$spelstop <- !is.na(dat$fy)
     dat <- dat %>% arrange(adultid_secure)# must always do this step!
@@ -67,17 +68,28 @@ get_spell_length <-function(list_num){
         filter(ID == min(ID)) %>%
         summarise(max(sp_length))
     return(x)
-    
-        
-}
 
-x3 <- get_spell_length(5)
-
-# data pairings. groups data into two consecutive years:
-biannual_spells <- list()
-yrs <- str_sub(d_names,2,5)
-for(i in 1:(length(yrs)-1)){
-   biannual_spells[[i]] <- bind_rows(d_list[[i]],d_list[[i+1]] )
 }
+durations <- list()
+#get durations
+for(i in seq_along(biannual_spells)) {
+    durations[[i]] <- get_spell_length(i,'biannual_spells')
+    summ <-summary(durations[[i]])
+    print(paste0("Summary for years: ",yrs[i]," to ", yrs[i+1]))
+    print(summ)
+}
+# build report
+report <- tibble(year=NA,mean=NA,median=NA,max=NA,min=NA, length=NA)
+for(i in seq_along(biannual_spells)) {
+    temp <- durations[[i]][[2]] 
+    report[i,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
+    report[i,2] <- mean(temp)
+    report[i,3] <- median(temp)
+    report[i,4] <- max(temp)
+    report[i,5] <- min(temp)
+    report[i,6] <- length(temp)
+}
+setwd("~/git/continuity_subsidy")
+save(report, file = 'biannual_spells.rDATA')
 
 
