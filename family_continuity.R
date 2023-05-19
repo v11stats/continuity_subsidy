@@ -30,6 +30,7 @@ rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 d_names
 setwd("~/git/continuity_subsidy")
+# needed
 # this file is required to run this script, it contains a bespoke function
 # for calculating arrangements
 source("~/git/continuity_subsidy/spell_arrangement_function.R")
