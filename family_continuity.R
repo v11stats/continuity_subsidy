@@ -30,7 +30,7 @@ rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 d_names
 setwd("~/git/continuity_subsidy")
-source("~/git/continuity_subsidy/get_spell_function.R")
+source("~/git/continuity_subsidy/spell_arrangement_function.R")
 # get all possible months for each year all_months
 # and all providers in each year, all_providers
 # make a larger dataset of all possible provider month combinations, all_possible
@@ -60,7 +60,7 @@ for(i in seq_along(biannual_spells)) {
     print(summ)
 }
 # build report
-report <- tibble(year=NA,mean=NA,median=NA,max=NA,min=NA, length=NA)
+report <- tibble(year=NA,mean=NA,median=NA,max=NA,min=NA, N_of_famileis=NA, sd=NA)
 for(i in seq_along(biannual_spells)) {
     temp <- durations[[i]][[2]] 
     report[i,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
@@ -69,8 +69,9 @@ for(i in seq_along(biannual_spells)) {
     report[i,4] <- max(temp)
     report[i,5] <- min(temp)
     report[i,6] <- length(temp)
+    report[i,7] <- sd(temp)
 }
-
+report
 save(report, file = 'biannual_spells.rDATA')
 
 
