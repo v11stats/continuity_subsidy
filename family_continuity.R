@@ -1,5 +1,13 @@
 # Rscript to read in excel files and create family spells
 library(readxl); library(tidyverse); library(data.table)
+################################################################################
+#
+# Add any additional year of data to the below section. Just link the excel file
+# and use the naming convention x + year to name the file. The code will loop 
+# through the datasets and produce the report: 'biannual_spells.rDATA' for each
+# available year, which can then be added to the shiny app.
+#
+################################################################################
 setwd("C:/Users/mwohn/Box/OSUdata5yrs/From Robi Feb 22, 2022")
 #step1 import dataset
 x2015 <- read_excel('2015_OSU_Update_202202.xlsx')
@@ -21,7 +29,8 @@ for(i in seq_along(d_list)) {
 rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 d_names
-
+setwd("~/git/continuity_subsidy")
+source("~/git/continuity_subsidy/get_spell_function.R")
 # get all possible months for each year all_months
 # and all providers in each year, all_providers
 # make a larger dataset of all possible provider month combinations, all_possible
@@ -41,35 +50,7 @@ for(i in 1:(length(yrs)-1)){
     biannual_spells[[i]] <- bind_rows(d_list[[i]],d_list[[i+1]] )
 }
 
-# this function computes spell lengths, ignoring the first spell of the given
-# period. It returns a dataframe with the adult_id and spell length for each
-# family unit. 
-get_spell_length <-function(list_num, list_name = "d_list"){
-    mylist <- get(list_name)
-    dat <- mylist[[list_num]]
-    xmin <- min(dat$benemonth)
-    dat$spelstop <- !is.na(dat$fy)
-    dat <- dat %>% arrange(adultid_secure)# must always do this step!
-    dat <- dat %>%
-        group_by(adultid_secure, ID = rleid(spelstop)) %>%
-        mutate(sp_length = cumsum(spelstop)) %>%
-        ungroup() %>%
-        filter(sp_length !=0)
-    # get lcensored observations and remove them
-    # r censored not important here
-    dat <- dat %>%
-        group_by(adultid_secure, ID) %>%
-        mutate(sMin = min(benemonth),
-               lcensor = (sMin == xmin)) %>%
-        filter(lcensor !=T) %>%
-        select(-spelstop,-sMin, -lcensor)
-    x <- dat %>%
-        group_by(adultid_secure) %>%
-        filter(ID == min(ID)) %>%
-        summarise(max(sp_length))
-    return(x)
 
-}
 durations <- list()
 #get durations
 for(i in seq_along(biannual_spells)) {
@@ -89,7 +70,7 @@ for(i in seq_along(biannual_spells)) {
     report[i,5] <- min(temp)
     report[i,6] <- length(temp)
 }
-setwd("~/git/continuity_subsidy")
+
 save(report, file = 'biannual_spells.rDATA')
 
 
