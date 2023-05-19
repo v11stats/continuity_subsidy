@@ -1,5 +1,6 @@
 # R-script to read in excel files and create child arrangements
-# 
+# R version 4.3.0 
+# Using tidyverse 2.0.0, datatable 1.14.8, readxl 1.4.2
 library(readxl); library(tidyverse); library(data.table)
 ################################################################################
 #
@@ -40,129 +41,9 @@ for(i in 1:(length(yrs)-1)){
     biannual_arrangements[[i]] <- bind_rows(d_list[[i]],d_list[[i+1]] )
 }
 setwd("~/git/continuity_subsidy")
-#source("~/git/continuity_subsidy/get_spell_function.R")
-
-x2015 <- d_list[[1]]
-working <- x2015 %>% select(childid_secure, benemonth, providerdhsnum, hours, payment, fy)
-
-### Spell creation 
-#
-#########################
-# selects Primary providers for a child
-# if there are more than one provider in a given 
-# benemonth, the Primary is determined by Hours, then Payment
-
-prov <- working %>% # distinct adult/benemonth table created
-    group_by(childid_secure, benemonth) %>%
-    select(providerdhsnum, hours, payment) %>%
-    arrange(desc(hours), desc(payment)) %>%
-    ungroup() %>%
-    select(-hours, -payment) %>%
-    mutate(num="Providers") %>%
-    pivot_wider(names_from = num , values_from = providerdhsnum,
-        values_fn = list )
-prov$Providers <- sapply(prov$Providers,unique) #
-# I had to use unique because since the providers are ordered by hours and payment,
-# duplicates were showing up when aggregating via pivot_wider
-prov$ProvNames <- sapply(prov$Providers, paste, collapse=",")
-prov$NumProviders <- sapply(prov$Providers, length )
-prov$primary <- sapply(prov$Providers, head,1)
-prov$Providers <- NULL
-prov$ProvNames <- NULL
-#get a list of all the months in the data
-months <- working %>% select(benemonth) %>% distinct() %>% arrange(benemonth)
-prov <- prov %>% arrange(childid_secure, benemonth)
-# get all the possible children
-children <- working %>% select(childid_secure) %>% distinct() %>% filter(childid_secure !="")
-# make a large db of all possible months for each child, along with the 
-# primary provider for the month
-temp2 <- cross_join(months, children)
-temp2 <- left_join(temp2,prov)
-temp2 <- as.data.table(temp2)
-temp2$spelstop <- !is.na(temp2$primary)
-temp2 <- temp2 %>% arrange(childid_secure) #you must sort by ChildID_Secure for this to work!!!
-#the following line of code counts spell length, gets the first 
-#beneMonth of each spell, and groups each summary by a unique group name (ID)
-temp2 <- temp2 %>%
-    group_by(childid_secure, ID = rleid(primary)) %>%  #advance value every time Signal changes and group by that
-    mutate(arrange_length = cumsum(spelstop)) %>% #cumsum in each group
-    ungroup() %>%#ungroup so you could remove the grouping column
-    #select(-plag, -spell, -sp) %>%
-    filter(arrange_length !=0)  
-temp2 <- temp2 %>%
-    group_by(childid_secure ,ID) %>%
-    mutate(sMin = min(benemonth), 
-           lcensor = (sMin==min(months))) %>% 
-    filter(lcensor != T) %>%
-    select(-spelstop, -sMin, -lcensor)
-temp3 <- temp2 %>%
-    group_by(childid_secure) %>%
-    filter(ID == min(ID)) %>%
-    summarise(max(arrange_length))
-
-get_arrangement <- function(list_num, list_name = 'd_list'){
-    mylist <- get(list_name)
-    dat <- mylist[[list_num]]
-    
-    ### Spell creation 
-    #
-    #########################
-    # selects Primary providers for a child
-    # if there are more than one provider in a given 
-    # benemonth, the Primary is determined by Hours, then Payment
-    
-    prov <- dat %>% # distinct adult/benemonth table created
-        group_by(childid_secure, benemonth) %>%
-        select(providerdhsnum, hours, payment) %>%
-        arrange(desc(hours), desc(payment)) %>%
-        ungroup() %>%
-        select(-hours, -payment) %>%
-        mutate(num="Providers") %>%
-        pivot_wider(names_from = num , values_from = providerdhsnum,
-                    values_fn = list )
-    prov$Providers <- sapply(prov$Providers,unique) #
-    # I had to use unique because since the providers are ordered by hours and payment,
-    # duplicates were showing up when aggregating via pivot_wider
-    prov$ProvNames <- sapply(prov$Providers, paste, collapse=",")
-    prov$NumProviders <- sapply(prov$Providers, length )
-    prov$primary <- sapply(prov$Providers, head,1)
-    prov$Providers <- NULL
-    prov$ProvNames <- NULL
-    #get a list of all the months in the data
-    months <- dat %>% select(benemonth) %>% distinct() %>% arrange(benemonth)
-    prov <- prov %>% arrange(childid_secure, benemonth)
-    # get all the possible children
-    children <- dat %>% select(childid_secure) %>% distinct() %>% filter(childid_secure !="")
-    # make a large db of all possible months for each child, along with the 
-    # primary provider for the month
-    temp2 <- cross_join(months, children)
-    temp2 <- left_join(temp2,prov)
-    temp2 <- as.data.table(temp2)
-    temp2$spelstop <- !is.na(temp2$primary)
-    temp2 <- temp2 %>% arrange(childid_secure) #you must sort by ChildID_Secure for this to work!!!
-    #the following line of code counts spell length, gets the first 
-    #beneMonth of each spell, and groups each summary by a unique group name (ID)
-    temp2 <- temp2 %>%
-        group_by(childid_secure, ID = rleid(primary)) %>%  #advance value every time Signal changes and group by that
-        mutate(arrange_length = cumsum(spelstop)) %>% #cumsum in each group
-        ungroup() %>%#ungroup so you could remove the grouping column
-        #select(-plag, -spell, -sp) %>%
-        filter(arrange_length !=0)  
-    temp2 <- temp2 %>%
-        group_by(childid_secure ,ID) %>%
-        mutate(sMin = min(benemonth), 
-               lcensor = (sMin==min(months))) %>% 
-        filter(lcensor != T) %>%
-        select(-spelstop, -sMin, -lcensor)
-    temp3 <- temp2 %>%
-        group_by(childid_secure) %>%
-        filter(ID == min(ID)) %>%
-        summarise(max(arrange_length))
-    return(temp3)# return new db with proper arrangement logic
-}
-
-temp4 <- get_arrangement(1)
-
+# this file is required to run this script, it contains a bespoke function
+# for calculating arrangements
+source("~/git/continuity_subsidy/spell_arrangement_function.R")
 
 durations <- list()
 #get durations
