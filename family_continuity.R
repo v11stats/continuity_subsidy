@@ -77,11 +77,20 @@ for(i in seq_along(durations)) {
 }
 report
 save(report, file = 'biannual_spells.rDATA')
-# extra
-# if we want to save the entire risk table, we can do this:
+# risk_tables
+# if we want to save the entire risk table, run this:
 for(i in seq_along(durations)) {
     temp <- durations[[i]] 
     tempSurv <- tidy(survfit(Surv(temp$sp_length,temp$rcensor)~1))
-    temp2<-  paste0("familyRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
+    temp2<-  paste0("risk_tables/familyRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
     save(tempSurv, file = temp2)
+}
+#
+# we can also save the entire survival object
+for(i in seq_along(durations)) {
+    temp <- durations[[i]] 
+    tempSurv <- survfit(Surv(temp$sp_length,temp$rcensor)~1)
+    temp2<-  paste0("survival_objects/familyRisk_obj",yrs[i],"_", yrs[i+1],".rDATA")
+    save(tempSurv, file = temp2)
+    
 }
