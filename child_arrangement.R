@@ -1,12 +1,13 @@
 # R-script to read in excel files and create child arrangements
 # R version 4.3.0 
 # Using tidyverse 2.0.0, datatable 1.14.8, readxl 1.4.2
-library(readxl); library(tidyverse); library(data.table)
+library(readxl); library(tidyverse); library(data.table); library(broom)
+library(survival)
 ################################################################################
 #
 # Add any additional year of data to the below section. Just link the excel file
 # and use the naming convention x + year to name the file. The code will loop 
-# through the datasets and produce the report: 'biannual_spells.rDATA' for each
+# through the datasets and produce the c_report: 'biannual_spells.rDATA' for each
 # available year, which can then be added to the shiny app.
 #
 ################################################################################
@@ -45,27 +46,34 @@ setwd("~/git/continuity_subsidy")
 # for calculating arrangements
 source("~/git/continuity_subsidy/spell_arrangement_function.R")
 
-durations <- list()
-#get durations
+c_durations <- list()
+#get c_durations
 for(i in seq_along(biannual_arrangements)) {
-    durations[[i]] <- get_arrangement(i,'biannual_arrangements')
-    summ <-summary(durations[[i]])
-    print(paste0("Summary for years: ",yrs[i]," to ", yrs[i+1]))
-    print(summ)
+    c_durations[[i]] <- get_arrangement(i,'biannual_arrangements')
 }
-# build report
-report <- tibble(year=NA,mean=NA,median=NA,max=NA,min=NA, N_of_children=NA, sd=NA)
-for(i in seq_along(biannual_arrangements)) {
-    temp <- durations[[i]][[2]] 
-    report[i,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
-    report[i,2] <- mean(temp)
-    report[i,3] <- median(temp)
-    report[i,4] <- max(temp)
-    report[i,5] <- min(temp)
-    report[i,6] <- length(temp)
-    report[i,7] <- sd(temp)
+# build c_report
+# build c_report
+c_report <- tibble(Year=NA,Median=NA,LCL=NA,UCL=NA, N_of_children=NA, Events=NA)
+for(i in seq_along(c_durations)) {
+    temp <- c_durations[[i]] 
+    c_report[i,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
+    #create surv object
+    tempSurv <- survfit(Surv(temp$arrange_length,temp$rcensor)~1)
+    tempQuants <- quantile(tempSurv,probs = .5)
+    c_report[i,2] <- tempQuants$quantile
+    c_report[i,3] <- tempQuants$lower
+    c_report[i,4] <- tempQuants$upper
+    c_report[i,5] <- tempSurv$n
+    c_report[i,6] <- sum(tempSurv$n.event)
 }
-report
-save(report, file = 'biannual_arrangements.rDATA')
+c_report
+save(c_report, file = 'biannual_arrangements.rDATA')
 
+# if we want to save the entire risk table, we can do this:
+for(i in seq_along(c_durations)) {
+    temp <- c_durations[[i]] 
+    tempSurv <- tidy(survfit(Surv(temp$arrange_length,temp$rcensor)~1))
+    temp2<-  paste0("childRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
+    save(tempSurv, file = temp2)
+}
 

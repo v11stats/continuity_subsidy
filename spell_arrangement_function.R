@@ -1,10 +1,11 @@
 # this function computes spell lengths, ignoring the first spell of the given
 # period. It returns a dataframe with the adult_id and spell length for each
 # family unit. 
-get_spell_length <-function(list_num, list_name = "d_list"){
+get_spell_length <-function(list_num, list_name = "f_list"){
     mylist <- get(list_name)
     dat <- mylist[[list_num]]
-    xmin <- min(dat$benemonth)
+    xmin <- min(dat$benemonth) #min month for the period
+    xmax <- max(dat$benemonth) #max month for the period
     dat$spelstop <- !is.na(dat$fy)
     dat <- dat %>% arrange(adultid_secure)# must always do this step!
     dat <- dat %>%
@@ -13,26 +14,24 @@ get_spell_length <-function(list_num, list_name = "d_list"){
         ungroup() %>%
         filter(sp_length !=0)
     # get lcensored observations and remove them
-    # r censored not important here
     dat <- dat %>%
         group_by(adultid_secure, ID) %>%
-        mutate(sMin = min(benemonth),
-               lcensor = (sMin == xmin)) %>%
+        mutate(sMin = min(benemonth),#get the min 
+               sMax = max(benemonth),#get the max month for the family
+               lcensor = (sMin == xmin),
+               rcensor = as.numeric(sMax != xmax)) %>%
         filter(lcensor !=T) %>%
-        select(-spelstop,-sMin, -lcensor)
-    x <- dat %>%
-        group_by(adultid_secure) %>%
-        filter(ID == min(ID)) %>%
-        summarise(max(sp_length))
-    return(x)
-    
+        select(-spelstop,-sMin, -lcensor,-ID,-sMax,-fy)
+    #only take the last benemonth as this is for a unstratified KM survival curve
+    dat <- dat %>%group_by(adultid_secure) %>% 
+         arrange(benemonth) %>% slice_tail(n=1) 
+    return(dat)     
 }
 get_arrangement <- function(list_num, list_name = 'd_list'){
     mylist <- get(list_name)
     dat <- mylist[[list_num]]
     
-    ### Spell creation 
-    #
+    
     #########################
     # selects Primary providers for a child
     # if there are more than one provider in a given 
@@ -78,12 +77,15 @@ get_arrangement <- function(list_num, list_name = 'd_list'){
     temp2 <- temp2 %>%
         group_by(childid_secure ,ID) %>%
         mutate(sMin = min(benemonth), 
-               lcensor = (sMin==min(months))) %>% 
+               lcensor = (sMin==min(months)),
+               rcensor = as.numeric(sMin!=max(months))) %>% 
         filter(lcensor != T) %>%
         select(-spelstop, -sMin, -lcensor)
-    temp3 <- temp2 %>%
+    #only take the last benemonth as this is for a unstratified KM survival curve
+    temp2 <- temp2 %>%
         group_by(childid_secure) %>%
-        filter(ID == min(ID)) %>%
-        summarise(max(arrange_length))
-    return(temp3)# return new db with proper arrangement logic
+        arrange(benemonth) %>%
+        slice_tail(n=1)
+        
+    return(temp2)# return new db with proper arrangement logic
 }

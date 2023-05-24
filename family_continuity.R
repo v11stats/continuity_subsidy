@@ -1,5 +1,6 @@
 # Rscript to read in excel files and create family spells
 library(readxl); library(tidyverse); library(data.table); library(survival)
+library(broom)
 ################################################################################
 #
 # Add any additional year of data to the below section. Just link the excel file
@@ -76,5 +77,11 @@ for(i in seq_along(durations)) {
 }
 report
 save(report, file = 'biannual_spells.rDATA')
-
-
+# extra
+# if we want to save the entire risk table, we can do this:
+for(i in seq_along(durations)) {
+    temp <- durations[[i]] 
+    tempSurv <- tidy(survfit(Surv(temp$sp_length,temp$rcensor)~1))
+    temp2<-  paste0("familyRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
+    save(tempSurv, file = temp2)
+}
