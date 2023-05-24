@@ -11,6 +11,12 @@ library(survival)
 # available year, which can then be added to the shiny app.
 #
 ################################################################################
+
+# **** Important **** this script will only work if the below files contain the 
+# column names in line 37, i.e. childid_secure, benemonth, providerdhsnum, 
+# hours, payment, fy. They can 
+# be upper or lowercase.
+
 setwd("C:/Users/mwohn/Box/OSUdata5yrs/From Robi Feb 22, 2022")
 #step1 import dataset
 x2015 <- read_excel('2015_OSU_Update_202202.xlsx')
@@ -73,7 +79,15 @@ save(c_report, file = 'biannual_arrangements.rDATA')
 for(i in seq_along(c_durations)) {
     temp <- c_durations[[i]] 
     tempSurv <- tidy(survfit(Surv(temp$arrange_length,temp$rcensor)~1))
-    temp2<-  paste0("childRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
+    temp2<-  paste0("risk_tables/childRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
     save(tempSurv, file = temp2)
 }
 
+# we can also save the entire survival object
+for(i in seq_along(c_durations)) {
+    temp <- c_durations[[i]] 
+    tempSurv <- survfit(Surv(temp$arrange_length,temp$rcensor)~1)
+    temp2<-  paste0("survival_objects/childRisk_obj",yrs[i],"_", yrs[i+1],".rDATA")
+    save(tempSurv, file = temp2)
+    
+}

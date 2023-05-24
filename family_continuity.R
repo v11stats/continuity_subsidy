@@ -9,6 +9,11 @@ library(broom)
 # available year, which can then be added to the shiny app.
 #
 ################################################################################
+
+# **** Important **** this script will only work if the below files contain the 
+# column names in line 33, i.e. adultid_secure, benemonth, fy. They can 
+# be upper or lowercase.
+
 setwd("C:/Users/mwohn/Box/OSUdata5yrs/From Robi Feb 22, 2022")
 #step1 import dataset
 x2015 <- read_excel('2015_OSU_Update_202202.xlsx')
@@ -23,6 +28,7 @@ for(i in seq_along(f_list)) {
     names(f_list[[i]]) =
         tolower(names(f_list[[i]]))
 }
+
 for(i in seq_along(f_list)) {
     f_list[[i]] <- f_list[[i]] %>% select(adultid_secure, benemonth, fy) %>%
         distinct()
@@ -77,11 +83,20 @@ for(i in seq_along(durations)) {
 }
 report
 save(report, file = 'biannual_spells.rDATA')
-# extra
-# if we want to save the entire risk table, we can do this:
+# risk_tables
+# if we want to save the entire risk table, run this:
 for(i in seq_along(durations)) {
     temp <- durations[[i]] 
     tempSurv <- tidy(survfit(Surv(temp$sp_length,temp$rcensor)~1))
-    temp2<-  paste0("familyRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
+    temp2<-  paste0("risk_tables/familyRiskTable",yrs[i],"_", yrs[i+1],".rDATA")
     save(tempSurv, file = temp2)
+}
+#
+# we can also save the entire survival object
+for(i in seq_along(durations)) {
+    temp <- durations[[i]] 
+    tempSurv <- survfit(Surv(temp$sp_length,temp$rcensor)~1)
+    temp2<-  paste0("survival_objects/familyRisk_obj",yrs[i],"_", yrs[i+1],".rDATA")
+    save(tempSurv, file = temp2)
+    
 }
