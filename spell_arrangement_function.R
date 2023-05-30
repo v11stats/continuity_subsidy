@@ -81,11 +81,13 @@ get_arrangement <- function(list_num, list_name = 'd_list'){
                rcensor = as.numeric(sMin!=max(months))) %>% 
         filter(lcensor != T) %>%
         select(-spelstop, -sMin, -lcensor)
-    #only take the last benemonth as this is for a unstratified KM survival curve
-    temp2 <- temp2 %>%
+
+    temp3 <- dat %>% 
         group_by(childid_secure) %>%
         arrange(benemonth) %>%
-        slice_tail(n=1)
-        
+        select(childid_secure,  toc, starts_with('race'),ethnicity) %>%
+        slice_head(n=1) %>%# i had to take only the first observation as there were ties
+        ungroup()
+    temp2 <- left_join(temp2,temp3)    
     return(temp2)# return new db with proper arrangement logic
 }

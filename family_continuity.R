@@ -82,7 +82,8 @@ for(i in seq_along(durations)) {
     report[i,6] <- sum(tempSurv$n.event)
 }
 report
-save(report, file = 'biannual_spells.rDATA')
+# save(report, file = 'biannual_spells.rDATA')
+fwrite(report, file = 'reports/biannual_family_spells.csv', col.names = T)
 # risk_tables
 # if we want to save the entire risk table, run this:
 for(i in seq_along(durations)) {
