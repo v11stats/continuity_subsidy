@@ -24,6 +24,7 @@ x2016 <- read_excel('2016_OSU_Update_202202.xlsx')
 x2017 <- read_excel('2017_OSU_Update_202202.xlsx')
 x2018 <- read_excel('2018_OSU_Update_202202.xlsx')
 x2019 <- read_excel('2019_OSU_Update_202202.xlsx')
+x2020 <- read_excel('2019_OSU_Update_202202.xlsx')
 # collect all the datasets and only get the columns I want
 d_names <- ls(pattern = "x20[0-9][0-9]+")# names of datasets
 d_list <- mget(d_names)
@@ -40,7 +41,7 @@ for(i in seq_along(d_list)) {
         select(-raceethnicity) %>%
         distinct()
 }
-#rm(list=ls(pattern = "x20[0-9][0-9]+"))
+rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 # compute TOC types for each child and fix racial coding
 for(i in seq_along(d_list)) {
@@ -143,6 +144,7 @@ for(i in seq_along(c_durations)) {
     tempNam <- tempNam[name %like% "race"]
     for(j in 1:nrow(tempNam)){
         tempSurv <- survfit(Surv(arrange_length,rcensor)~get(tempNam$name[j]) ,data=temp)
+        tempQuants <- quantile(tempSurv,probs = .5)
         race_report[j+tempRow,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
         race_report[j+tempRow,2] <- tempNam$name[j]
         race_report[j+tempRow,3] <- tempQuants$quantile[2]
