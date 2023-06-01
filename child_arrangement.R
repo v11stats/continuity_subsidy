@@ -24,7 +24,6 @@ x2016 <- read_excel('2016_OSU_Update_202202.xlsx')
 x2017 <- read_excel('2017_OSU_Update_202202.xlsx')
 x2018 <- read_excel('2018_OSU_Update_202202.xlsx')
 x2019 <- read_excel('2019_OSU_Update_202202.xlsx')
-x2020 <- read_excel('2019_OSU_Update_202202.xlsx')
 # collect all the datasets and only get the columns I want
 d_names <- ls(pattern = "x20[0-9][0-9]+")# names of datasets
 d_list <- mget(d_names)
@@ -186,3 +185,28 @@ for(i in seq_along(c_durations)) {
 e_report
 rm(list=ls(pattern = '^temp'))
 fwrite(e_report, file = "reports/stratified_ethnicities_biannual.csv", col.names = T)
+
+#Stratified TOC types
+t_report <- tibble(Year=NA,TypeOfCare=NA,Median=NA,LCL=NA,UCL=NA, N_of_children=NA, Events=NA)
+tempRow <- 0
+for(i in seq_along(c_durations)) {
+    temp <- c_durations[[i]]
+    tempSurv <- survfit(Surv(arrange_length,rcensor)~toc ,data=temp)
+    tempNam <- names(tempSurv$strata)
+    x <-tidy(tempSurv)
+    tempQuants <- quantile(tempSurv,probs = .5)
+    for(j in 1:length(tempNam)){
+        t_report[j+tempRow,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
+        t_report[j+tempRow,2] <- tempNam[j]
+        t_report[j+tempRow,3] <- tempQuants$quantile[j]
+        t_report[j+tempRow,4] <- tempQuants$lower[j]
+        t_report[j+tempRow,5] <- tempQuants$upper[j]
+        t_report[j+tempRow,6] <- tempSurv$n[j]
+        t_report[j+tempRow,7] <- sum(tempSurv$n.event[which(x$strata==tempNam[j])])
+    }
+    tempRow <- tempRow + 6
+}
+t_report
+rm(list=ls(pattern = '^temp'))
+fwrite(t_report, file = "reports/stratified_toc_child_biannual.csv", col.names = T)
+

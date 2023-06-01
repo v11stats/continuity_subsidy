@@ -1,0 +1,25 @@
+Year,TypeOfCare,Median,LCL,UCL,N_of_families,Events
+Years: 2015 - 2016,toc=Certified Center,6,6,6,32287,19554
+Years: 2015 - 2016,toc=Certified Family,10,10,10,14537,6454
+Years: 2015 - 2016,toc=Exempt Center,6,5,6,1121,793
+Years: 2015 - 2016,toc=Exempt Nonrelative,6,6,7,21665,11922
+Years: 2015 - 2016,toc=Exempt Relative,10,10,11,8700,4046
+Years: 2015 - 2016,toc=Registered Family,9,9,9,17856,8345
+Years: 2016 - 2017,toc=Certified Center,7,7,7,37186,20373
+Years: 2016 - 2017,toc=Certified Family,10,10,11,16464,7162
+Years: 2016 - 2017,toc=Exempt Center,5,4,5,1254,914
+Years: 2016 - 2017,toc=Exempt Nonrelative,6,6,6,16440,9818
+Years: 2016 - 2017,toc=Exempt Relative,10,10,10,9746,4249
+Years: 2016 - 2017,toc=Registered Family,8,8,9,17737,8831
+Years: 2017 - 2018,toc=Certified Center,7,6,7,36580,22980
+Years: 2017 - 2018,toc=Certified Family,9,8,9,17650,9181
+Years: 2017 - 2018,toc=Exempt Center,4,4,4,1364,1045
+Years: 2017 - 2018,toc=Exempt Nonrelative,5,5,5,8229,5276
+Years: 2017 - 2018,toc=Exempt Relative,8,8,9,10595,5408
+Years: 2017 - 2018,toc=Registered Family,8,8,8,17095,9163
+Years: 2018 - 2019,toc=Certified Center,7,7,7,36595,19875
+Years: 2018 - 2019,toc=Certified Family,10,10,10,18207,8117
+Years: 2018 - 2019,toc=Exempt Center,3,3,3,1873,1458
+Years: 2018 - 2019,toc=Exempt Nonrelative,6,6,6,6800,3828
+Years: 2018 - 2019,toc=Exempt Relative,11,10,11,10832,4745
+Years: 2018 - 2019,toc=Registered Family,8,8,8,16318,8175

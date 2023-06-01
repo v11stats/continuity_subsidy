@@ -30,10 +30,11 @@ for(i in seq_along(f_list)) {
 }
 
 for(i in seq_along(f_list)) {
-    f_list[[i]] <- f_list[[i]] %>% select(adultid_secure, benemonth, fy) %>%
+    f_list[[i]] <- f_list[[i]] %>% select(adultid_secure, benemonth,
+              fy, factype, relative) %>%
         distinct()
         }
-rm(list=ls(pattern = "x20[0-9][0-9]+"))
+#rm(list=ls(pattern = "x20[0-9][0-9]+"))
 gc()
 f_names
 setwd("~/git/continuity_subsidy")
@@ -41,6 +42,26 @@ setwd("~/git/continuity_subsidy")
 # this file is required to run this script, it contains a bespoke function
 # for calculating arrangements
 source("~/git/continuity_subsidy/spell_arrangement_function.R")
+# compute TOC types for each child and fix racial coding
+for(i in seq_along(f_list)) {
+    temp <- f_list[[i]]
+    temp$toc <- temp %>%
+        mutate (
+            toc = 
+                case_when(
+                    relative == "N" & factype =="QFM" ~ "Exempt Nonrelative",
+                    relative == "N" & factype =="FAM" ~ "Exempt Nonrelative",
+                    relative == "Y" & factype =="QFM" ~ "Exempt Relative",
+                    relative == "Y" & factype =="FAM" ~ "Exempt Relative",
+                    factype =="QEC" | factype =="NQC" ~ "Exempt Center",
+                    factype =="CFM" ~ "Certified Family",
+                    factype =="CNT" ~ "Certified Center",
+                    factype =="RFM" ~ "Registered Family",
+                )
+        ) %>% pull(toc)
+    f_list[[i]] <- temp
+}
+
 # get all possible months for each year all_months
 # and all providers in each year, all_providers
 # make a larger dataset of all possible provider month combinations, all_possible
@@ -71,6 +92,9 @@ for(i in seq_along(biannual_spells)) {
 report <- tibble(Year=NA,Median=NA,LCL=NA,UCL=NA, N_of_families=NA, Events=NA)
 for(i in seq_along(durations)) {
     temp <- durations[[i]] 
+    #only take the last benemonth as this is for a unstratified KM survival curve
+    temp <- temp %>%group_by(adultid_secure) %>%
+         arrange(benemonth) %>% slice_tail(n=1)
     report[i,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
     #create surv object
     tempSurv <- survfit(Surv(temp$sp_length,temp$rcensor)~1)
@@ -101,3 +125,29 @@ for(i in seq_along(durations)) {
     save(tempSurv, file = temp2)
     
 }
+
+#Stratified TOC types
+t_report <- tibble(Year=NA,TypeOfCare=NA,Median=NA,LCL=NA,UCL=NA, N_of_families=NA, Events=NA)
+tempRow <- 0
+for(i in seq_along(durations)) {
+    temp <- durations[[i]]
+    tempSurv <- survfit(Surv(sp_length,rcensor)~toc ,data=temp)
+    tempNam <- names(tempSurv$strata)
+    x <-tidy(tempSurv)
+    tempQuants <- quantile(tempSurv,probs = .5)
+    for(j in 1:length(tempNam)){
+        t_report[j+tempRow,1] <- paste0("Years: ",yrs[i]," - ", yrs[i+1])
+        t_report[j+tempRow,2] <- tempNam[j]
+        t_report[j+tempRow,3] <- tempQuants$quantile[j]
+        t_report[j+tempRow,4] <- tempQuants$lower[j]
+        t_report[j+tempRow,5] <- tempQuants$upper[j]
+        t_report[j+tempRow,6] <- tempSurv$n[j]
+        t_report[j+tempRow,7] <- sum(tempSurv$n.event[which(x$strata==tempNam[j])])
+    }
+    tempRow <- tempRow + 6
+}
+t_report
+rm(list=ls(pattern = '^temp'))
+fwrite(t_report, file = "reports/stratified_toc_family_biannual.csv", col.names = T)
+
+

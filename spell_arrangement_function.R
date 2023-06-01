@@ -22,10 +22,14 @@ get_spell_length <-function(list_num, list_name = "f_list"){
                rcensor = as.numeric(sMax != xmax)) %>%
         filter(lcensor !=T) %>%
         select(-spelstop,-sMin, -lcensor,-ID,-sMax,-fy)
-    #only take the last benemonth as this is for a unstratified KM survival curve
-    dat <- dat %>%group_by(adultid_secure) %>% 
-         arrange(benemonth) %>% slice_tail(n=1) 
-    return(dat)     
+    temp2 <- mylist[[list_num]] %>% 
+        group_by(adultid_secure) %>%
+        arrange(benemonth) %>%
+        select(adultid_secure,  toc) %>%
+        slice_head(n=1) %>%# i had to take only the first observation as there were ties
+        ungroup()
+    temp3 <- left_join(dat,temp2)  
+    return(temp3)     
 }
 get_arrangement <- function(list_num, list_name = 'd_list'){
     mylist <- get(list_name)
